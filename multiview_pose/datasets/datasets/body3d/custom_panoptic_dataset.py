@@ -6,6 +6,11 @@ from collections import OrderedDict
 import tempfile
 import mmcv
 import numpy as np
+import json
+import warnings
+import pickle
+
+from mmcv import Config
 
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.body3d import Body3DMviewDirectPanopticDataset
@@ -13,6 +18,92 @@ from mmpose.datasets.datasets.body3d import Body3DMviewDirectPanopticDataset
 
 @DATASETS.register_module()
 class CustomPanopticDataset(Body3DMviewDirectPanopticDataset):
+    def __init__(self,
+                ann_file,
+                img_prefix,
+                data_cfg,
+                pipeline,
+                dataset_info=None,
+                test_mode=False):
+
+        if dataset_info is None:
+            warnings.warn(
+                'dataset_info is missing. '
+                'Check https://github.com/open-mmlab/mmpose/pull/663 '
+                'for details.', DeprecationWarning)
+            cfg = Config.fromfile('configs/_base_/datasets/panoptic_body3d.py')
+            dataset_info = cfg._cfg_dict['dataset_info']
+
+        super().__init__(
+            ann_file,
+            img_prefix,
+            data_cfg,
+            pipeline,
+            dataset_info=dataset_info,
+            test_mode=test_mode)
+
+        self.load_config(data_cfg)
+        self.ann_info['use_different_joint_weights'] = False
+
+        if ann_file is None:
+            self.db_file = osp.join(
+                img_prefix, f'mvpose_{self.subset}_cam{self.num_cameras}.pkl')
+        else:
+            self.db_file = ann_file
+
+        if osp.exists(self.db_file):
+            with open(self.db_file, 'rb') as f:
+                info = pickle.load(f)
+            assert info['sequence_list'] == self.seq_list
+            assert info['interval'] == self.seq_frame_interval
+            assert info['cam_list'] == self.cam_list
+            self.db = info['db']
+        else:
+            self.db = self._get_db()
+            info = {
+                'sequence_list': self.seq_list,
+                'interval': self.seq_frame_interval,
+                'cam_list': self.cam_list,
+                'db': self.db
+            }
+            with open(self.db_file, 'wb') as f:
+                pickle.dump(info, f)
+
+        self.db_size = len(self.db)
+
+        print(f'=> load {len(self.db)} samples')
+
+    def _get_cam(self, seq):
+        """Get camera parameters.
+
+        Args:
+            seq (str): Sequence name.
+
+        Returns: Camera parameters.
+        """
+        cam_file = osp.join(self.img_prefix, seq,
+                            'calibration.json'.format(seq))
+        with open(cam_file) as cfile:
+            calib = json.load(cfile)
+
+        M = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+        cameras = {}
+        for cam in calib['cameras']:
+            if (cam['panel'], cam['node']) in self.cam_list:
+                sel_cam = {}
+                R_w2c = np.array(cam['R']).dot(M)
+                T_w2c = np.array(cam['t']).reshape((3, 1)) * 10.0  # cm to mm
+                R_c2w = R_w2c.T
+                T_c2w = -R_w2c.T @ T_w2c
+                sel_cam['R'] = R_c2w.tolist()
+                sel_cam['T'] = T_c2w.tolist()
+                sel_cam['K'] = cam['K'][:2]
+                distCoef = cam['distCoef']
+                sel_cam['k'] = [distCoef[0], distCoef[1], distCoef[4]]
+                sel_cam['p'] = [distCoef[2], distCoef[3]]
+                cameras[(cam['panel'], cam['node'])] = sel_cam
+
+        return cameras
 
     def evaluate(self, outputs, res_folder=None, metric='mpjpe', **kwargs):
         """

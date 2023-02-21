@@ -1,5 +1,5 @@
-_base_ = ['../../../../_base_/datasets/panoptic_body3d.py']
-from configs._base_.datasets.panoptic_body3d import dataset_info
+_base_ = ['../../../../_base_/datasets/chi3d_body3d.py']
+from configs._base_.datasets.chi3d_body3d import dataset_info
 log_level = 'INFO'
 load_from = None
 resume_from = None
@@ -20,35 +20,32 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[7, 8])
-total_epochs = 10
+total_epochs = 60
 log_config = dict(
-    interval=50, hooks=[
+    interval=100, hooks=[
         dict(type='TextLoggerHook'),
     ])
 
-space_size = [8000, 8000, 2000]
-space_center = [0, -500, 800]
+space_size = [4000, 4000, 2000]
+space_center = [0, 0, 1000]
 cube_size = [80, 80, 20]
 sub_space_size = [2000, 2000, 2000]
 sub_cube_size = [64, 64, 64]
-image_size = [960, 512]
-heatmap_size = [240, 128]
+image_size = [512, 512]
+heatmap_size = [128, 128]
 num_joints = 15
-num_cameras = 5
+num_cameras = 4
 train_data_cfg = dict(
     image_size=image_size,
     heatmap_size=[heatmap_size],
     num_joints=num_joints,
     seq_list=[
-        # '160422_haggling1'
-        '160422_ultimatum1', '160224_haggling1', '160226_haggling1',
-        '161202_haggling1', '160906_ian1', '160906_ian2', '160906_ian3',
-        '160906_band1', '160906_band2'
+        's02', 's04'
     ],
-    cam_list=[(0, 12), (0, 6), (0, 23), (0, 13), (0, 3)],
+    cam_list=[None, None, None, None],
     num_cameras=num_cameras,
-    seq_frame_interval=3,
-    subset='train_debug',
+    seq_frame_interval=1,
+    subset='train',
     root_id=2,
     max_num=10,
     space_size=space_size,
@@ -60,13 +57,10 @@ test_data_cfg = train_data_cfg.copy()
 test_data_cfg.update(
     dict(
         seq_list=[
-            '160906_pizza1',
-            '160422_haggling1',
-            '160906_ian5',
-            '160906_band4',
+            's03'
         ],
-        seq_frame_interval=12,
-        subset='validation_debug'))
+        seq_frame_interval=1,
+        subset='validation'))
 
 # model settings
 backbone = dict(type='ResNet', depth=50)
@@ -90,7 +84,7 @@ model = dict(
     freeze_keypoint_head=False,
     freeze_2d=True,
     keypoint_head=keypoint_head,
-    pretrained='checkpoints/resnet_50_deconv.pth.tar',
+    pretrained='checkpoints/pose_resnet50_coco_rh_mvpose.pth',
     human_detector=dict(
         type='GraphCenterDetection',
         match_cfg=dict(type='MultiViewMatchModule',
@@ -260,35 +254,35 @@ val_pipeline = [
         keys=['img'],
         meta_keys=['sample_id', 'camera', 'center', 'scale', 'ann_info']),
         # meta_keys=[
-        #     'image_file', 'num_persons', 'joints_3d', 'sample_id', 'camera', 'center', 'scale',
+        #     'key', 'num_persons', 'joints_3d', 'sample_id', 'camera', 'center', 'scale',
         #     'joints_3d_visible', 'roots_3d', 'joints', 'person_ids'
         # ]),
 ]
 
 test_pipeline = val_pipeline
 
-data_root = 'data/panoptic/'
+data_root = 'data/chi3d_easymocap'
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=8,
+    workers_per_gpu=8,
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
     train=dict(
-        type='CustomPanopticDataset',
+        type='CustomCHI3DDataset',
         ann_file=None,
         img_prefix=data_root,
         data_cfg=train_data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
     val=dict(
-        type='CustomPanopticDataset',
+        type='CustomCHI3DDataset',
         ann_file=None,
         img_prefix=data_root,
         data_cfg=test_data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
     test=dict(
-        type='CustomPanopticDataset',
+        type='CustomCHI3DDataset',
         ann_file=None,
         img_prefix=data_root,
         data_cfg=test_data_cfg,
