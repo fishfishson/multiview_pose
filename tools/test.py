@@ -153,7 +153,7 @@ def main():
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
-    load_checkpoint(model, args.checkpoint, map_location='cpu', strict=True)
+    load_checkpoint(model, args.checkpoint, map_location='cpu', strict=False)
 
     if args.fuse_conv_bn:
         model = fuse_conv_bn(model)
@@ -188,11 +188,11 @@ def main():
     eval_config = merge_configs(eval_config, dict(metric=args.eval))
 
     if rank == 0:
+        results = dataset.evaluate(outputs, cfg.work_dir, **eval_config)
+        dataset.visualize(outputs, cfg.work_dir, **eval_config)
         if write:
             print(f'\nwriting results to {out}')
             mmcv.dump(outputs, out)
-        dataset.visualize(outputs, cfg.work_dir, **eval_config)
-        # results = dataset.evaluate(outputs, cfg.work_dir, **eval_config)
         # for k, v in sorted(results.items()):
         #     print(f'{k}: {v}')
 

@@ -23,7 +23,6 @@ class CustomDeconvHead(DeconvHead):
         else:
             features = []
             for i, layer in enumerate(self.deconv_layers):
-                print(layer)
                 x = layer(x)
                 if i in self.feature_extract_layers:
                     features.append(x)

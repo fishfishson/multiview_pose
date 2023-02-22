@@ -51,7 +51,8 @@ class NonGridProjectLayer(nn.Module):
             feature_map_size = [feature_map_size, feature_map_size]
 
         # self.register_buffer('image_size', torch.tensor(image_size))
-        self.register_buffer('feature_map_size', torch.tensor(feature_map_size))
+        print(feature_map_size)
+        self.register_buffer('feature_map_size', torch.tensor(feature_map_size), False)
 
     def forward(self, feature_maps, meta, multiview_sample_points, discard_nan=True):
         """

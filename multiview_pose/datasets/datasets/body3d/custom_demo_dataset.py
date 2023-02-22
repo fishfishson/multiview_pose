@@ -63,9 +63,9 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
         else:
             self.db_file = ann_file
 
-        seq_list = os.listdir(self.img_prefix)
-        new_seq_list = [x for x in seq_list if x[:3] in self.seq_list]
-        self.seq_list = new_seq_list
+        # seq_list = os.listdir(self.img_prefix)
+        # new_seq_list = [x for x in seq_list if x[:3] in self.seq_list]
+        # self.seq_list = new_seq_list
 
         if osp.exists(self.db_file):
             with open(self.db_file, 'rb') as f:
@@ -134,10 +134,12 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
             cameras = self._get_cam(seq)
             curr_anno = osp.join(self.img_prefix, seq, 'images', self.cam_list[0])
             anno_files = sorted(glob.iglob('{:s}/*.png'.format(curr_anno)))
+            anno_files += sorted(glob.iglob('{:s}/*.jpg'.format(curr_anno)))
             print(f'load sequence: {seq}', flush=True)
             for i, file in enumerate(anno_files):
                 if i % self.seq_frame_interval == 0:
                     bodies = [{
+                        'id': 0,
                         'keypoints3d': np.random.rand(self.num_joints, 3),
                     }]
 
@@ -197,8 +199,10 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
 
                         if cnt > 0:
                             db.append({
-                                'key':
-                                '_'.join([seq, k, osp.basename(file).split('.')[0]]),
+                                # 'key':
+                                # '_'.join([seq, k, osp.basename(file).split('.')[0]]),
+                                'seq': seq,
+                                'frame': osp.basename(file).split('.')[0],
                                 'image_file':
                                 osp.join(self.img_prefix, image_file),
                                 'joints_3d':
@@ -332,13 +336,17 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
             pred = pred[pred[:, 0, 3] >= 0]
             pred = np.concatenate([pred[..., :3] / 1000.0, np.ones_like(pred[..., :1])], axis=-1)
 
+            center = _outputs[i]['pose_3d'].copy()
+            center = center[center[:, 0, 3] >= 0] 
+            center = np.concatenate([center[..., :3] / 1000.0, np.ones_like(center[..., :1])], axis=-1)
+
             data = {
                 'gt': gt,
-                'pred': pred
+                'pred': pred,
+                'center': center
             }
-            key = db_rec['key'].split('_')
-            name = '_'.join([key[0], key[1], key[-1]]) + '.json'
-            name = osp.join(vis_folder, name)
+            # key = db_rec['key'].split('_')
+            name = osp.join(vis_folder, db_rec['frame'] + '.json')
             save_numpy_dict(name, data)
 
             # if 'Hug' in key[1]:
@@ -521,8 +529,8 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
         for c in range(self.num_cameras):
             result = copy.deepcopy(self.db[self.num_cameras * idx + c])
             result['ann_info'] = self.ann_info
-            width = 900
-            height = 900
+            width = 1296
+            height = 972
             result['mask'] = [np.ones((height, width), dtype=np.float32)]
             results[c] = result
 

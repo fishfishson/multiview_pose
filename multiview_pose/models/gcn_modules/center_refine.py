@@ -184,6 +184,7 @@ class CenterRefinementModule(nn.Module):
             if center_candidates_valid[b].sum() <= 0:
                 center_candidates_valid[b][0] = 1
 
+        # import ipdb; ipdb.set_trace()
         # refine
         for i in range(len(self.cfg_3d['search_radiance'])):
             queries = getattr(self, f'queries_{i}')

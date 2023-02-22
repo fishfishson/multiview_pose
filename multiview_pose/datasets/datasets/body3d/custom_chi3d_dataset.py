@@ -199,8 +199,9 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
 
                         if cnt > 0:
                             db.append({
-                                'key':
-                                '_'.join([seq, k, osp.basename(file).split('.')[0]]),
+                                'seq': seq,
+                                # '_'.join([seq, k, osp.basename(file).split('.')[0]]),
+                                'frame': osp.basename(file).split('.')[0],
                                 'image_file':
                                 osp.join(self.img_prefix, image_file),
                                 'joints_3d':
@@ -264,14 +265,14 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                     f'Unsupported metric "{_metric}"'
                     f'Supported metrics are {self.ALLOWED_METRICS}')
 
-        if res_folder is not None:
-            tmp_folder = None
-            res_file = osp.join(res_folder, 'result_keypoints.json')
-        else:
-            tmp_folder = tempfile.TemporaryDirectory()
-            res_file = osp.join(tmp_folder.name, 'result_keypoints.json')
+        # if res_folder is not None:
+        #     tmp_folder = None
+        #     res_file = osp.join(res_folder, 'result_keypoints.json')
+        # else:
+        #     tmp_folder = tempfile.TemporaryDirectory()
+        #     res_file = osp.join(tmp_folder.name, 'result_keypoints.json')
 
-        mmcv.dump(_outputs, res_file)
+        # mmcv.dump(_outputs, res_file)
 
         results = dict()
         results.update(self._evaluate(_outputs, metrics))
@@ -280,8 +281,8 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                                       eval_name='center_3d',
                                       suffix='_c',
                                       joint_ids=[self.root_id]))
-        if tmp_folder is not None:
-            tmp_folder.cleanup()
+        # if tmp_folder is not None:
+        #     tmp_folder.cleanup()
 
         return results
     
@@ -309,6 +310,7 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
             tmp_folder = tempfile.TemporaryFile()
             vis_folder = osp.join(tmp_folder.name, 'blenderfig')
 
+        # gt_num = len(_outputs)
         gt_num = self.db_size // self.num_cameras
         assert len(_outputs) == gt_num, f'number mismatch: {len(_outputs)}, {gt_num}'
         
@@ -334,9 +336,14 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
             pred = pred[pred[:, 0, 3] >= 0]
             pred = np.concatenate([pred[..., :3] / 1000.0, np.ones_like(pred[..., :1])], axis=-1)
 
+            center = _outputs[i]['center_3d'].copy()
+            center = center[center[:, 0, 3] >= 0]
+            center = np.concatenate([center[..., :3] / 1000.0, np.ones_like(center[..., :1])], axis=-1)
+
             data = {
                 'gt': gt,
-                'pred': pred
+                'pred': pred,
+                'center': center
             }
             key = db_rec['key'].split('_')
             name = '_'.join([key[0], key[1], key[-1]]) + '.json'
@@ -396,6 +403,7 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
             pred = _outputs[i][eval_name].copy()
             pred = pred[pred[:, 0, 3] >= 0]
             for pose in pred:
+                pjpes = []
                 mpjpes = []
                 for (gt, gt_vis) in zip(joints_3d, joints_3d_vis):
                     if joint_ids is not None:
@@ -404,9 +412,10 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                     vis = gt_vis[:, 0] > 0
                     if vis.sum() < 1:
                         break
-                    mpjpe = np.mean(
-                        np.sqrt(
-                            np.sum((pose[vis, 0:3] - gt[vis])**2, axis=-1)))
+                    pjpe = np.sqrt(
+                        np.sum((pose[vis, 0:3] - gt[vis])**2, axis=-1))
+                    pjpes.append(pjpe)
+                    mpjpe = np.mean(pjpe)
                     mpjpes.append(mpjpe)
                 min_gt = np.argmin(mpjpes)
                 min_mpjpe = np.min(mpjpes)
@@ -414,7 +423,8 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                 eval_list.append({
                     'mpjpe': float(min_mpjpe),
                     'score': float(score),
-                    'gt_id': int(total_gt + min_gt)
+                    'gt_id': int(total_gt + min_gt),
+                    'pjpes': pjpes
                 })
 
             total_gt += (joints_3d_vis[:, :, 0].sum(-1) >= 1).sum()

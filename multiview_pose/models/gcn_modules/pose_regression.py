@@ -194,6 +194,7 @@ class PoseRegressionModule(nn.Module):
 
         # classification
         cls_targets = torch.zeros_like(cls_scores)
+        import ipdb; ipdb.set_trace()
         cls_targets[poses[..., 0, 3].long() >= 0] = 1.0
 
         loss_pose_cls = self.cls_loss(cls_scores, cls_targets)
