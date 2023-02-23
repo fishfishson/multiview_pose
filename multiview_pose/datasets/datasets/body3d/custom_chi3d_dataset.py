@@ -370,8 +370,10 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                 'pred_init': pred_init,
                 'center_init': center_init,
             }
-            key = db_rec['key'].split('_')
-            name = '_'.join([key[0], key[1], key[-1]]) + '.json'
+            # key = db_rec['key'].split('_')
+            seq = db_rec['seq']
+            frame = db_rec['frame']
+            name = '_'.join([seq, frame]) + '.json'
             name = osp.join(vis_folder, name)
             save_numpy_dict(name, data)
 
