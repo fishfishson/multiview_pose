@@ -132,6 +132,7 @@ def reconstruct_from_two_points(camera_center_1, ray_direction_1,
     D_p = torch.stack([ray_direction_1.T, ray_direction_2.T], dim=-1)
 
     reconstructions = 0.5 * O_p - 0.5 * D_p @ (D_m_T @ D_m).inverse() @ D_m_T @ O_m
+    # reconstructions = 0.5 * O_p - 0.5 * D_p @ (D_m_T @ D_m + 1e-3 * torch.eye(2, device=D_m.device)[None]).inverse() @ D_m_T @ O_m
 
     return reconstructions.contiguous().view(-1, 3)
 

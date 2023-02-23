@@ -92,6 +92,7 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
         print(f'=> load {len(self.db)} samples')
     
     def load_config(self, data_cfg):
+        self.ori_image_size = data_cfg['ori_image_size']
         self.num_joints = data_cfg['num_joints']
         assert self.num_joints <= 19
         self.seq_list = data_cfg['seq_list']
@@ -126,8 +127,8 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
         return cameras 
     
     def _get_db(self):
-        width = 1296
-        height = 972
+        width = self.ori_image_size[0]
+        height = self.ori_image_size[1]
         db = []
         sample_id = 0
         for seq in self.seq_list:
@@ -290,16 +291,27 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
     def visualize(self, outputs, res_folder=None, **kwargs):
         pose_3ds = np.concatenate([output['pose_3d'] for output in outputs],
                                   axis=0)
+        pose_3d_inits = np.concatenate([output['pose_3d_init'] for output in outputs],
+                                       axis=0)
         center_3ds = np.concatenate([output['human_detection_3d'][..., None, :]
                                      for output in outputs],
                                     axis=0)
+        center_3d_inits = np.concatenate([output['human_detection_3d_init'][..., None, :]
+                                         for output in outputs],
+                                         axis=0)
 
         sample_ids = []
         for output in outputs:
             sample_ids.extend(output['sample_id'])
         _outputs = [
-            dict(sample_id=sample_id, pose_3d=pose_3d, center_3d=center_3d)
-            for (sample_id, pose_3d, center_3d) in zip(sample_ids, pose_3ds, center_3ds)
+            dict(
+                sample_id=sample_id, 
+                pose_3d=pose_3d, 
+                center_3d=center_3d, 
+                pose_3d_init=pose3d_init,
+                center_3d_init=center_3d_init)
+            for (sample_id, pose_3d, center_3d, pose3d_init, center_3d_init) in \
+                zip(sample_ids, pose_3ds, center_3ds, pose_3d_inits, center_3d_inits)
         ]
         _outputs = self._sort_and_unique_outputs(_outputs, key='sample_id')
 
@@ -336,14 +348,24 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
             pred = pred[pred[:, 0, 3] >= 0]
             pred = np.concatenate([pred[..., :3] / 1000.0, np.ones_like(pred[..., :1])], axis=-1)
 
+            pred_init = _outputs[i]['pose_3d_init'].copy()
+            pred_init = pred_init[pred_init[:, 0, 3] >= 0]
+            pred_init = np.concatenate([pred_init[..., :3] / 1000.0, np.ones_like(pred_init[..., :1])], axis=-1)
+
             center = _outputs[i]['pose_3d'].copy()
             center = center[center[:, 0, 3] >= 0] 
             center = np.concatenate([center[..., :3] / 1000.0, np.ones_like(center[..., :1])], axis=-1)
 
+            center_init = _outputs[i]['center_3d_init'].copy()
+            center_init = center_init[center_init[:, 0, 3] >= 0]
+            center_init = np.concatenate([center_init[..., :3] / 1000.0, np.ones_like(center_init[..., :1])], axis=-1)
+
             data = {
                 'gt': gt,
                 'pred': pred,
-                'center': center
+                'center': center,
+                'pred_init': pred_init,
+                'center_init': center_init
             }
             # key = db_rec['key'].split('_')
             name = osp.join(vis_folder, db_rec['frame'] + '.json')
@@ -529,8 +551,8 @@ class CustomDemoDataset(Kpt3dMviewRgbImgDirectDataset):
         for c in range(self.num_cameras):
             result = copy.deepcopy(self.db[self.num_cameras * idx + c])
             result['ann_info'] = self.ann_info
-            width = 1296
-            height = 972
+            width = self.ori_image_size[0]
+            height = self.ori_image_size[1]
             result['mask'] = [np.ones((height, width), dtype=np.float32)]
             results[c] = result
 

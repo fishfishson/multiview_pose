@@ -31,9 +31,9 @@ space_center = [0, 0, 1000]
 cube_size = [80, 80, 20]
 sub_space_size = [2000, 2000, 2000]
 sub_cube_size = [64, 64, 64]
-ori_image_size = [1296, 972]
-image_size = [512, 384]
-heatmap_size = [128, 96]
+ori_image_size = [900, 900]
+image_size = [512, 512]
+heatmap_size = [128, 128]
 num_joints = 15
 num_cameras = 4
 train_data_cfg = dict(
@@ -44,7 +44,7 @@ train_data_cfg = dict(
     seq_list=[
         'demo'
     ],
-    cam_list=['01', '02', '03', '04'],
+    cam_list=['50591643','58860488','60457274','65906101'],
     num_cameras=num_cameras,
     seq_frame_interval=1,
     subset='demo',
@@ -263,7 +263,7 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'data/Crash_easymocap'
+data_root = 'data/thuman-chi3d'
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=1,

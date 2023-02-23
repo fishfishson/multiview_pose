@@ -31,18 +31,20 @@ space_center = [0, 0, 1000]
 cube_size = [80, 80, 20]
 sub_space_size = [2000, 2000, 2000]
 sub_cube_size = [64, 64, 64]
-image_size = [512, 384]
-heatmap_size = [128, 96]
+ori_image_size = [1024, 1024]
+image_size = [512, 512]
+heatmap_size = [128, 128]
 num_joints = 15
 num_cameras = 4
 train_data_cfg = dict(
+    ori_image_size=ori_image_size,
     image_size=image_size,
     heatmap_size=[heatmap_size],
     num_joints=num_joints,
     seq_list=[
         'demo'
     ],
-    cam_list=['01', '02', '03', '04'],
+    cam_list=['01', '07', '13', '19'],
     num_cameras=num_cameras,
     seq_frame_interval=1,
     subset='demo',

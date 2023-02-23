@@ -168,7 +168,9 @@ def main():
             outputs = json.load(f)
         for output in tqdm(outputs):
             output['pose_3d'] = np.array(output['pose_3d'])
+            output['pose_3d_init'] = np.array(output['pose_3d_init'])
             output['human_detection_3d'] = np.array(output['human_detection_3d'])
+            output['human_detection_3d_init'] = np.array(output['human_detection_3d_init'])
         write = False
     else:
         if not distributed:
@@ -188,11 +190,11 @@ def main():
     eval_config = merge_configs(eval_config, dict(metric=args.eval))
 
     if rank == 0:
-        results = dataset.evaluate(outputs, cfg.work_dir, **eval_config)
-        dataset.visualize(outputs, cfg.work_dir, **eval_config)
+        # results = dataset.evaluate(outputs, cfg.work_dir, **eval_config)
         if write:
             print(f'\nwriting results to {out}')
             mmcv.dump(outputs, out)
+        dataset.visualize(outputs, cfg.work_dir, **eval_config)
         # for k, v in sorted(results.items()):
         #     print(f'{k}: {v}')
 

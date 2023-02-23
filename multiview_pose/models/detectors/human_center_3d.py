@@ -192,6 +192,6 @@ class GraphCenterDetection(nn.Module):
         center_candidates = self.match_module(feature_maps, img_metas, False, None)
         # print(f'multiview match: {time() - tik}', flush=True)
         # tik = time()
-        center_candidates = self.refine_module(feature_maps, img_metas, center_candidates, False)
+        center_candidates_init, center_candidates = self.refine_module(feature_maps, img_metas, center_candidates, False)
         # print(f'center refinement: {time() - tik}', flush=True)
-        return center_candidates
+        return center_candidates_init, center_candidates

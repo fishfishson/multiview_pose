@@ -179,12 +179,12 @@ class CenterRefinementModule(nn.Module):
         center_candidates = self.cubic_nms(heatmap_cubes)  # NxPx5
         center_candidates_valid = center_candidates[..., 4] > self.score_threshold  # NxP
         center_candidates[..., 3] = center_candidates_valid.float() - 1.0
+        center_candidates_init = center_candidates.clone()
 
         for b in range(batch_size):
             if center_candidates_valid[b].sum() <= 0:
                 center_candidates_valid[b][0] = 1
 
-        # import ipdb; ipdb.set_trace()
         # refine
         for i in range(len(self.cfg_3d['search_radiance'])):
             queries = getattr(self, f'queries_{i}')
@@ -206,7 +206,7 @@ class CenterRefinementModule(nn.Module):
                     center_candidates_i_b[range(num_candidates), candidates_refined_i_b]
                 center_candidates[b][center_candidates_valid[b], 4] = candidates_scores_i_b
 
-        return center_candidates
+        return center_candidates_init, center_candidates
 
     def generate_sub_samples(self, center_candidates, queries):
         samples = (center_candidates[:, None] + queries[None]).view(-1, 3)

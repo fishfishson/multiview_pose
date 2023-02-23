@@ -109,6 +109,7 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
 
         cameras = {}
         for k, v in calib.items():
+            # if k not in self.cam_list: continue
             sel_cam = {}
             R_w2c = np.array(v['R'])
             T_w2c = np.array(v['T']).reshape((3, 1)) * 1000.0
@@ -163,7 +164,10 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                         for body in bodies:
                             if cnt >= self.max_persons:
                                 break
-                            pose3d = np.array(body['keypoints3d']).reshape(-1, 3)
+                            pose3d = np.array(body['keypoints3d'])
+                            if pose3d.shape[-1] == 4:
+                                pose3d = pose3d[..., :3]
+                            pos3d = pose3d.reshape(-1, 3)
                             if self.joint_type == 'body25':
                                 pose3d = pose3d[body25topanoptic15]
                             pose3d = pose3d[:self.num_joints]
@@ -289,16 +293,27 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
     def visualize(self, outputs, res_folder=None, **kwargs):
         pose_3ds = np.concatenate([output['pose_3d'] for output in outputs],
                                   axis=0)
+        pose_3d_inits = np.concatenate([output['pose_3d_init'] for output in outputs],
+                                       axis=0)
         center_3ds = np.concatenate([output['human_detection_3d'][..., None, :]
-                                     for output in outputs],
+                                    for output in outputs],
                                     axis=0)
+        center_3d_inits = np.concatenate([output['human_detection_3d_init'][..., None, :]
+                                         for output in outputs],
+                                         axis=0)
 
         sample_ids = []
         for output in outputs:
             sample_ids.extend(output['sample_id'])
         _outputs = [
-            dict(sample_id=sample_id, pose_3d=pose_3d, center_3d=center_3d)
-            for (sample_id, pose_3d, center_3d) in zip(sample_ids, pose_3ds, center_3ds)
+            dict(
+                sample_id=sample_id, 
+                pose_3d=pose_3d, 
+                center_3d=center_3d, 
+                pose_3d_init=pose3d_init,
+                center_3d_init=center_3d_init)
+            for (sample_id, pose_3d, center_3d, pose3d_init, center_3d_init) in \
+                zip(sample_ids, pose_3ds, center_3ds, pose_3d_inits, center_3d_inits)
         ]
         _outputs = self._sort_and_unique_outputs(_outputs, key='sample_id')
 
@@ -336,14 +351,24 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
             pred = pred[pred[:, 0, 3] >= 0]
             pred = np.concatenate([pred[..., :3] / 1000.0, np.ones_like(pred[..., :1])], axis=-1)
 
+            pred_init = _outputs[i]['pose_3d_init'].copy()
+            pred_init = pred_init[pred_init[:, 0, 3] >= 0]
+            pred_init = np.concatenate([pred_init[..., :3] / 1000.0, np.ones_like(pred_init[..., :1])], axis=-1)
+
             center = _outputs[i]['center_3d'].copy()
             center = center[center[:, 0, 3] >= 0]
             center = np.concatenate([center[..., :3] / 1000.0, np.ones_like(center[..., :1])], axis=-1)
 
+            center_init = _outputs[i]['center_3d_init'].copy()
+            center_init = center_init[center_init[:, 0, 3] >= 0]
+            center_init = np.concatenate([center_init[..., :3] / 1000.0, np.ones_like(center_init[..., :1])], axis=-1)
+
             data = {
                 'gt': gt,
                 'pred': pred,
-                'center': center
+                'center': center,
+                'pred_init': pred_init,
+                'center_init': center_init,
             }
             key = db_rec['key'].split('_')
             name = '_'.join([key[0], key[1], key[-1]]) + '.json'

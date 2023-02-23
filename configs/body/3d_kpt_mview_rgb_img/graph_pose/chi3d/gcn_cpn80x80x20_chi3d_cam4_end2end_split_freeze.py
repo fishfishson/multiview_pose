@@ -42,7 +42,7 @@ train_data_cfg = dict(
     seq_list=[
         's02', 's04'
     ],
-    cam_list=[None, None, None, None],
+    cam_list=['50591643','58860488','60457274','65906101'],
     num_cameras=num_cameras,
     seq_frame_interval=1,
     subset='train',
@@ -271,7 +271,7 @@ val_pipeline = [
 test_pipeline = val_pipeline
 
 data_root = 'data/chi3d_easymocap'
-test_data_root = 'data/chi3d_s03_Hug'
+test_data_root = 'data/chi3d_s03'
 data = dict(
     samples_per_gpu=8,
     workers_per_gpu=8,
