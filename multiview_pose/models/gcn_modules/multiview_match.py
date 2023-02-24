@@ -28,7 +28,6 @@ class MultiViewMatchModule(nn.Module):
         self.cfg_3d = cfg_3d.copy()
         self.match_threshold = match_threshold
         super(MultiViewMatchModule, self).__init__()
-        print(feature_map_size)
         self.register_buffer('feature_map_size', torch.tensor(feature_map_size), False)
         self.register_buffer('grid_samples', compute_grid(cfg_3d['space_size'],
                                                           cfg_3d['space_center'],

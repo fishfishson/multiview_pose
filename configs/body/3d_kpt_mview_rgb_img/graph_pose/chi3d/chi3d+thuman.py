@@ -20,7 +20,7 @@ lr_config = dict(
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[7, 8])
-total_epochs = 30
+total_epochs = 60
 log_config = dict(
     interval=100, hooks=[
         dict(type='TextLoggerHook'),
@@ -40,11 +40,11 @@ train_data_cfg = dict(
     heatmap_size=[heatmap_size],
     num_joints=num_joints,
     seq_list=[
-        's02', 's03'
+        's02', 's04', 's05'
     ],
-    cam_list=[None, None, None, None],
+    cam_list=['50591643','58860488','60457274','65906101'],
     num_cameras=num_cameras,
-    seq_frame_interval=5,
+    seq_frame_interval=1,
     subset='train',
     root_id=2,
     max_num=10,
@@ -53,14 +53,23 @@ train_data_cfg = dict(
     cube_size=cube_size,
 )
 
+val_data_cfg = train_data_cfg.copy()
+val_data_cfg.update(
+    dict(
+        seq_list=[
+            's03'
+        ],
+        seq_frame_interval=1,
+        subset='validation'))
+
 test_data_cfg = train_data_cfg.copy()
 test_data_cfg.update(
     dict(
         seq_list=[
-            's04'
+            's03'
         ],
-        seq_frame_interval=5,
-        subset='validation'))
+        seq_frame_interval=1,
+        subset='test'))
 
 # model settings
 backbone = dict(type='ResNet', depth=50)
@@ -81,8 +90,8 @@ model = dict(
     type='GraphBasedModel',
     num_joints=15,
     backbone=backbone,
-    freeze_keypoint_head=False,
-    freeze_2d=False,
+    freeze_keypoint_head=True,
+    freeze_2d=True,
     keypoint_head=keypoint_head,
     pretrained='checkpoints/pose_resnet50_coco_rh_mvpose.pth',
     human_detector=dict(
@@ -222,7 +231,7 @@ train_pipeline = [
         keys=['img', 'target', 'mask', 'center_candidates', 'match_graph'],
         meta_keys=[
             'num_persons', 'joints_3d', 'camera', 'center', 'scale',
-            'joints_3d_visible', 'roots_3d', 'joints', 'person_ids'
+            'joints_3d_visible', 'roots_3d', 'joints', 'person_ids', 'seq', 'frame'
         ]),
 ]
 
@@ -252,7 +261,7 @@ val_pipeline = [
     dict(
         type='Collect',
         keys=['img'],
-        meta_keys=['sample_id', 'camera', 'center', 'scale', 'ann_info']),
+        meta_keys=['sample_id', 'camera', 'center', 'scale', 'ann_info', 'seq', 'frame']),
         # meta_keys=[
         #     'key', 'num_persons', 'joints_3d', 'sample_id', 'camera', 'center', 'scale',
         #     'joints_3d_visible', 'roots_3d', 'joints', 'person_ids'
@@ -262,9 +271,10 @@ val_pipeline = [
 test_pipeline = val_pipeline
 
 data_root = 'data/chi3d_easymocap'
+test_data_root = 'data/chi3d_s03'
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=8,
+    workers_per_gpu=8,
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
     train=dict(
@@ -284,7 +294,7 @@ data = dict(
     test=dict(
         type='CustomCHI3DDataset',
         ann_file=None,
-        img_prefix=data_root,
+        img_prefix=test_data_root,
         data_cfg=test_data_cfg,
         pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}}),
