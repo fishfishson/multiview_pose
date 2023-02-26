@@ -57,14 +57,19 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
         self.load_config(data_cfg)
         self.ann_info['use_different_joint_weights'] = False
 
+        os.makedirs('./cache', exist_ok=True)
         if ann_file is None:
             self.db_file = osp.join(
-                img_prefix, f'mvpose_{self.subset}_cam{self.num_cameras}.pkl')
+                './cache', f'mvpose_{self.subset}_cam{self.num_cameras}_{self.exp_name}.pkl')
         else:
             self.db_file = ann_file
 
-        seq_list = os.listdir(self.img_prefix)
-        new_seq_list = [x for x in seq_list if x[:3] in self.seq_list]
+        seqs = os.listdir(self.img_prefix)
+        new_seq_list = []
+        for x in self.seq_list:
+            for seq in seqs:
+                if x in seq:
+                    new_seq_list.append(seq) 
         self.seq_list = new_seq_list
 
         if osp.exists(self.db_file):
@@ -92,6 +97,8 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
         print(f'=> load {len(self.db)} samples')
     
     def load_config(self, data_cfg):
+        self.exp_name = data_cfg['exp_name']
+        self.ori_image_size = data_cfg['ori_image_size']
         self.num_joints = data_cfg['num_joints']
         assert self.num_joints <= 19
         self.seq_list = data_cfg['seq_list']
@@ -109,7 +116,7 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
 
         cameras = {}
         for k, v in calib.items():
-            # if k not in self.cam_list: continue
+            if k not in self.cam_list: continue
             sel_cam = {}
             R_w2c = np.array(v['R'])
             T_w2c = np.array(v['T']).reshape((3, 1)) * 1000.0
@@ -126,8 +133,8 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
         return cameras 
     
     def _get_db(self):
-        width = 900
-        height = 900
+        width = self.ori_image_size[0]
+        height = self.ori_image_size[1]
         db = []
         sample_id = 0
         for seq in self.seq_list:
@@ -560,8 +567,8 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
         for c in range(self.num_cameras):
             result = copy.deepcopy(self.db[self.num_cameras * idx + c])
             result['ann_info'] = self.ann_info
-            width = 900
-            height = 900
+            width = self.ori_image_size[0]
+            height = self.ori_image_size[1]
             result['mask'] = [np.ones((height, width), dtype=np.float32)]
             results[c] = result
 

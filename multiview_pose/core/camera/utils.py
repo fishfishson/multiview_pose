@@ -80,16 +80,16 @@ def calculate_stereo_geometry(x1, camera1, x2, camera2, reconstruct=False):
 
     # project x1 -> image2
     epipole_1to2 = camera2.param['R_c2w'] @ (camera_center_1 - camera_center_2)
-    epipole_1to2 = epipole_1to2[:2, :] / epipole_1to2[2, :]   # 2x1
+    epipole_1to2 = epipole_1to2[:2, :] / (epipole_1to2[2, :] + 1e-6)  # 2x1
     second_point_1to2 = camera2.param['R_c2w'] @ (camera_center_1 + ray_direction_1 - camera_center_2)     # 3xN
-    second_point_1to2 = second_point_1to2[:2, :] / second_point_1to2[2:, :]      # 2xN
+    second_point_1to2 = second_point_1to2[:2, :] / (second_point_1to2[2:, :] + 1e-6)      # 2xN
     distance_1to2 = calculate_point2line_distance(x_camera_norm_2[:2], epipole_1to2, second_point_1to2)   # N
 
     # project x2 -> image1
     epipole_2to1 = camera1.param['R_c2w'] @ (camera_center_2 - camera_center_1)
-    epipole_2to1 = epipole_2to1[:2, :] / epipole_2to1[2, :]
+    epipole_2to1 = epipole_2to1[:2, :] / (epipole_2to1[2, :] + 1e-6)
     second_point_2to1 = camera1.param['R_c2w'] @ (camera_center_2 + ray_direction_2 - camera_center_1)
-    second_point_2to1 = second_point_2to1[:2, :] / second_point_2to1[2:, :]
+    second_point_2to1 = second_point_2to1[:2, :] / (second_point_2to1[2:, :] + 1e-6)
     distance_2to1 = calculate_point2line_distance(x_camera_norm_1[:2], epipole_2to1, second_point_2to1)   # N
 
     if reconstruct:

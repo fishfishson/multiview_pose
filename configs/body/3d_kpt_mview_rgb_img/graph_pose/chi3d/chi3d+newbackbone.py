@@ -31,16 +31,19 @@ space_center = [0, 0, 1000]
 cube_size = [80, 80, 20]
 sub_space_size = [2000, 2000, 2000]
 sub_cube_size = [64, 64, 64]
+ori_image_size = [900, 900]
 image_size = [512, 512]
 heatmap_size = [128, 128]
 num_joints = 15
 num_cameras = 4
 train_data_cfg = dict(
+    exp_name='chi3d+newbackbone',
+    ori_image_size=ori_image_size,
     image_size=image_size,
     heatmap_size=[heatmap_size],
     num_joints=num_joints,
     seq_list=[
-        's02', 's04', 's05'
+        's02', 's04'
     ],
     cam_list=['50591643','58860488','60457274','65906101'],
     num_cameras=num_cameras,
@@ -57,7 +60,7 @@ val_data_cfg = train_data_cfg.copy()
 val_data_cfg.update(
     dict(
         seq_list=[
-            's03'
+            's03_Hug'
         ],
         seq_frame_interval=1,
         subset='validation'))
@@ -270,8 +273,9 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'data/chi3d_easymocap'
-test_data_root = 'data/chi3d_s03'
+train_data_root = 'data/chi3d_easymocap'
+val_data_root = 'data/chi3d_easymocap'
+test_data_root = 'data/chi3d_easymocap'
 data = dict(
     samples_per_gpu=8,
     workers_per_gpu=8,
@@ -280,15 +284,15 @@ data = dict(
     train=dict(
         type='CustomCHI3DDataset',
         ann_file=None,
-        img_prefix=data_root,
+        img_prefix=train_data_root,
         data_cfg=train_data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
     val=dict(
         type='CustomCHI3DDataset',
         ann_file=None,
-        img_prefix=data_root,
-        data_cfg=test_data_cfg,
+        img_prefix=val_data_root,
+        data_cfg=val_data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
     test=dict(
