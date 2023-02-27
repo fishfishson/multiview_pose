@@ -326,11 +326,11 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
 
         if res_folder is not None:
             tmp_folder = None
-            vis_folder = osp.join(res_folder, 'blenderfig') 
+            vis_folder = osp.join(res_folder) 
             os.makedirs(vis_folder, exist_ok=True)
         else:
             tmp_folder = tempfile.TemporaryFile()
-            vis_folder = osp.join(tmp_folder.name, 'blenderfig')
+            vis_folder = osp.join(tmp_folder.name)
 
         # gt_num = len(_outputs)
         gt_num = self.db_size // self.num_cameras
@@ -356,19 +356,19 @@ class CustomCHI3DDataset(Kpt3dMviewRgbImgDirectDataset):
                 
             pred = _outputs[i]['pose_3d'].copy()
             pred = pred[pred[:, 0, 3] >= 0]
-            pred = np.concatenate([pred[..., :3] / 1000.0, np.ones_like(pred[..., :1])], axis=-1)
+            pred = np.concatenate([pred[..., :3] / 1000.0, pred[..., 3:]], axis=-1)
 
             pred_init = _outputs[i]['pose_3d_init'].copy()
             pred_init = pred_init[pred_init[:, 0, 3] >= 0]
-            pred_init = np.concatenate([pred_init[..., :3] / 1000.0, np.ones_like(pred_init[..., :1])], axis=-1)
+            pred_init = np.concatenate([pred_init[..., :3] / 1000.0, pred_init[..., :3]], axis=-1)
 
             center = _outputs[i]['center_3d'].copy()
             center = center[center[:, 0, 3] >= 0]
-            center = np.concatenate([center[..., :3] / 1000.0, np.ones_like(center[..., :1])], axis=-1)
+            center = np.concatenate([center[..., :3] / 1000.0, center[..., 3:]], axis=-1)
 
             center_init = _outputs[i]['center_3d_init'].copy()
             center_init = center_init[center_init[:, 0, 3] >= 0]
-            center_init = np.concatenate([center_init[..., :3] / 1000.0, np.ones_like(center_init[..., :1])], axis=-1)
+            center_init = np.concatenate([center_init[..., :3] / 1000.0, center_init[..., 3:]], axis=-1)
 
             data = {
                 'gt': gt,

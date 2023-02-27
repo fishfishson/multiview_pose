@@ -37,6 +37,7 @@ heatmap_size = [128, 96]
 num_joints = 15
 num_cameras = 4
 train_data_cfg = dict(
+    exp_name='dance',
     ori_image_size=ori_image_size,
     image_size=image_size,
     heatmap_size=[heatmap_size],
@@ -54,6 +55,15 @@ train_data_cfg = dict(
     space_center=space_center,
     cube_size=cube_size,
 )
+
+val_data_cfg = train_data_cfg.copy()
+val_data_cfg.update(
+    dict(
+        seq_list=[
+            'demo'
+        ],
+        seq_frame_interval=1,
+        subset='demo'))
 
 test_data_cfg = train_data_cfg.copy()
 test_data_cfg.update(
@@ -263,7 +273,9 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'data/DanceF_easymocap'
+train_data_root = 'data/DanceF_easymocap'
+val_data_root = 'data/DanceF_easymocap'
+test_data_root = 'data/DanceF_easymocap'
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=1,
@@ -272,21 +284,21 @@ data = dict(
     train=dict(
         type='CustomDemoDataset',
         ann_file=None,
-        img_prefix=data_root,
+        img_prefix=train_data_root,
         data_cfg=train_data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
     val=dict(
         type='CustomDemoDataset',
         ann_file=None,
-        img_prefix=data_root,
-        data_cfg=test_data_cfg,
+        img_prefix=val_data_root,
+        data_cfg=val_data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
     test=dict(
         type='CustomDemoDataset',
         ann_file=None,
-        img_prefix=data_root,
+        img_prefix=test_data_root,
         data_cfg=test_data_cfg,
         pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}}),

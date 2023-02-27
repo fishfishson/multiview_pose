@@ -136,3 +136,5 @@ docs_zh-CN/modelzoo.md
 
 *.DS_Store
 checkpoints/
+exp-out
+cache

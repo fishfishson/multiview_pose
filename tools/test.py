@@ -158,10 +158,7 @@ def main():
     if args.fuse_conv_bn:
         model = fuse_conv_bn(model)
 
-    if args.out:
-        out = args.out
-    else:
-        out = os.path.join(cfg.work_dir, 'output.json')
+    out = os.path.join(cfg.work_dir, 'output.json')
     
     if os.path.exists(out):
         with open(out, 'r') as f:
@@ -194,7 +191,7 @@ def main():
         if write:
             print(f'\nwriting results to {out}')
             mmcv.dump(outputs, out)
-        dataset.visualize(outputs, cfg.work_dir, **eval_config)
+        dataset.visualize(outputs, args.out, **eval_config)
         # for k, v in sorted(results.items()):
         #     print(f'{k}: {v}')
 

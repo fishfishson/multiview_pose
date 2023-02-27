@@ -31,23 +31,27 @@ space_center = [0, 0, 1000]
 cube_size = [80, 80, 20]
 sub_space_size = [2000, 2000, 2000]
 sub_cube_size = [64, 64, 64]
-ori_image_size = [1296, 972]
-image_size = [512, 384]
-heatmap_size = [128, 96]
+ori_image_size = [900, 900]
+image_size = [512, 512]
+heatmap_size = [128, 128]
 num_joints = 15
 num_cameras = 4
 train_data_cfg = dict(
+    exp_name='chi3d+all+thuman+newbackbone',
     ori_image_size=ori_image_size,
     image_size=image_size,
     heatmap_size=[heatmap_size],
     num_joints=num_joints,
     seq_list=[
-        'demo'
+        's02', 's04', 's03',
+        's05_thuman4','s05_thuman4','s05_thuman4','s05_thuman4','s05_thuman4',
+        's05_thuman4','s05_thuman4','s05_thuman4','s05_thuman4','s05_thuman4',
+        's05_thuman2','s05_thuman2'
     ],
-    cam_list=['01', '02', '03', '04'],
+    cam_list=['50591643','58860488','60457274','65906101'],
     num_cameras=num_cameras,
     seq_frame_interval=1,
-    subset='demo',
+    subset='train',
     root_id=2,
     max_num=10,
     space_size=space_size,
@@ -55,14 +59,23 @@ train_data_cfg = dict(
     cube_size=cube_size,
 )
 
+val_data_cfg = train_data_cfg.copy()
+val_data_cfg.update(
+    dict(
+        seq_list=[
+            's03_Hug'
+        ],
+        seq_frame_interval=1,
+        subset='validation'))
+
 test_data_cfg = train_data_cfg.copy()
 test_data_cfg.update(
     dict(
         seq_list=[
-            'demo'
+            's03'
         ],
         seq_frame_interval=1,
-        subset='demo'))
+        subset='test'))
 
 # model settings
 backbone = dict(type='ResNet', depth=50)
@@ -224,7 +237,7 @@ train_pipeline = [
         keys=['img', 'target', 'mask', 'center_candidates', 'match_graph'],
         meta_keys=[
             'num_persons', 'joints_3d', 'camera', 'center', 'scale',
-            'joints_3d_visible', 'roots_3d', 'joints', 'person_ids'
+            'joints_3d_visible', 'roots_3d', 'joints', 'person_ids', 'seq', 'frame'
         ]),
 ]
 
@@ -254,7 +267,7 @@ val_pipeline = [
     dict(
         type='Collect',
         keys=['img'],
-        meta_keys=['sample_id', 'camera', 'center', 'scale', 'ann_info']),
+        meta_keys=['sample_id', 'camera', 'center', 'scale', 'ann_info', 'seq', 'frame']),
         # meta_keys=[
         #     'key', 'num_persons', 'joints_3d', 'sample_id', 'camera', 'center', 'scale',
         #     'joints_3d_visible', 'roots_3d', 'joints', 'person_ids'
@@ -263,30 +276,32 @@ val_pipeline = [
 
 test_pipeline = val_pipeline
 
-data_root = 'data/Fight_easymocap'
+train_data_root = 'data/chi3d_easymocap'
+val_data_root = 'data/chi3d_easymocap'
+test_data_root = 'data/chi3d_easymocap'
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=1,
+    samples_per_gpu=8,
+    workers_per_gpu=8,
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
     train=dict(
-        type='CustomDemoDataset',
+        type='CustomCHI3DDataset',
         ann_file=None,
-        img_prefix=data_root,
+        img_prefix=train_data_root,
         data_cfg=train_data_cfg,
         pipeline=train_pipeline,
         dataset_info={{_base_.dataset_info}}),
     val=dict(
-        type='CustomDemoDataset',
+        type='CustomCHI3DDataset',
         ann_file=None,
-        img_prefix=data_root,
-        data_cfg=test_data_cfg,
+        img_prefix=val_data_root,
+        data_cfg=val_data_cfg,
         pipeline=val_pipeline,
         dataset_info={{_base_.dataset_info}}),
     test=dict(
-        type='CustomDemoDataset',
+        type='CustomCHI3DDataset',
         ann_file=None,
-        img_prefix=data_root,
+        img_prefix=test_data_root,
         data_cfg=test_data_cfg,
         pipeline=test_pipeline,
         dataset_info={{_base_.dataset_info}}),

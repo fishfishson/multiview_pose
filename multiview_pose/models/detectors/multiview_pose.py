@@ -193,8 +193,12 @@ class GraphBasedModel(BasePose):
             for img_ in img:
                 feature_maps.append(self.predict_heatmap(img_)[0])
 
+        result = {}
+
         human_candidates_init, human_candidates = self.human_detector.forward_test(
             None, img_metas, feature_maps, **kwargs)
+        result['human_detection_3d_init'] = human_candidates_init.cpu().numpy()
+        result['human_detection_3d'] = human_candidates.cpu().numpy()
 
         human_poses_init = self.pose_regressor(
             None,
@@ -202,16 +206,14 @@ class GraphBasedModel(BasePose):
             return_loss=False,
             feature_maps=[f[:, -self.num_joints:] for f in feature_maps],
             human_candidates=human_candidates)
+        result['pose_3d_init'] = human_poses_init.cpu().numpy()
+
         if self.pose_refiner is not None and self.test_with_refine:
             human_poses = self.pose_refiner.forward_test(human_poses_init, feature_maps, img_metas)
         else:
             human_poses = human_poses_init.clone()
-
-        result = {}
         result['pose_3d'] = human_poses.cpu().numpy()
-        result['pose_3d_init'] = human_poses_init.cpu().numpy()
-        result['human_detection_3d'] = human_candidates.cpu().numpy()
-        result['human_detection_3d_init'] = human_candidates_init.cpu().numpy()
+
         result['sample_id'] = [img_meta['sample_id'] for img_meta in img_metas]
 
         return result
